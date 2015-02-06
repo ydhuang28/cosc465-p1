@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-__author__ = "jsommers@colgate.edu"
+__author__ = "jsommers@colgate.edu, mliu@colgate.edu, dhuang@colgate.edu"
 __doc__ = '''
 A simple model-view controller-based message board/chat client application.
 '''
@@ -56,19 +56,30 @@ class MessageBoardController(object):
         self.view = MessageBoardView(myname)
         self.view.setMessageCallback(self.post_message_callback)
         self.net = MessageBoardNetwork(host, port)
+        self.waittime = 300	# refresh every 0.3s
+        self.prev_msgs = []	# create empty list to store messages
 
     def run(self):
-        self.view.after(1000, self.retrieve_messages)
+        self.view.after(waittime, self.retrieve_messages)
         self.view.mainloop()
-
+        
     def post_message_callback(self, m):
-        '''
-        This method gets called in response to a user typing in
-        a message to send from the GUI.  It should dispatch
-        the message to the MessageBoardNetwork class via the
-        postMessage method.
-        '''
-        pass
+        rv = self.net.postMessage(myname, m)
+        
+        if rv[:5] == "AERROR":
+        	# just change the status
+        	self.view.setStatus("Error when posting " + m)
+        elif rv[:2] == "AOK":
+        	# posting was a-ok
+        	# view cannot add one line at a time
+        	# how to get previous messages?
+        	# create instance variable in controller class?
+        	# --> let retrieve_messages handle it since that
+        	#     is periodically called
+        	# so just ignore?
+        	
+        
+        
 
     def retrieve_messages(self):
         '''
@@ -87,8 +98,11 @@ class MessageBoardController(object):
         which can be used to display any useful status information
         at the bottom of the GUI.
         '''
-        self.view.after(1000, self.retrieve_messages)
-        messagedata = self.net.getMessages()
+        
+        # can increase refresh speed by decreasing that number
+        # apparently in milliseconds
+        self.view.after(waittime, self.retrieve_messages)
+        self.prev_msgs = self.net.getMessages()
 
 
 class MessageBoardView(tkinter.Frame):
