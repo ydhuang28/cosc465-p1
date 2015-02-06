@@ -28,48 +28,68 @@ class MessageBoardNetwork(object):
         here and do any other initialization.
         '''
         self.port = port
-        self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, 0)
         self.host = host
-        self.sock.bind((host, port))
+        self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, 0)
 
     def getMessages(self):
         '''
-        You should make calls to get messages from the message 
-        board server here.
+        Gets messages from the message board server.
+        
+        The first entry in the tuple is the return value,
+        and has the following meaning:
+        2 - no data received from server/nothing wrong happened
+        1 - moar messages!
+        0 - no messages
+        -1 - something went wrong
         '''
         getMsg = "AGET"
-        self.sock.sendto(getMsg.encode('utf8'), (self.server, self.port))
+        self.sock.sendto(getMsg.encode('utf8'), (self.host, self.port))
 
-        readlist, writelist, errlist = select.select(self.sock, [], [], 0.1)
-        if len(readlist) != 0;
+        readlist, writelist, errlist = select([self.sock], [], [], 0.1)
+        if len(readlist) != 0:
             (msgs, serveraddr) = self.sock.recvfrom(1400)
         
-            if msgs[0:3].decode() == "AOK" and len(Msgs) > 4:
-                return (0, msgs[4:].split("::"))
+            if msgs[0:3].decode() == "AOK" and len(msgs) > 4:
+                msgs = msgs[4:].decode()
+                return_msgs = msgs.split("::")
+                return (1, return_msgs)
                 #splitMsgs = 
 
-            elif len(msgs) == 4:    # just "AOK "
+            elif len(msgs.decode()) == 4:    # just "AOK "
                 return (0, ["There are no messages on the server at this moment."])
 
-            else:   # something went horribly wrong!
-                return (-1, msgs[7:])
+            elif msgs[:6].decode() == "AERROR":   # something went horribly wrong!
+                return (-1, msgs[7:].decode())
+            else:
+                return (2, 0)
+        else:   # need to do something when no data
+            return (2, 0)
 
 
     def postMessage(self, user, message):
         '''
-        You should make calls to post messages to the message 
-        board server here.
+        Posts a message to the message board server.
+        
+        The first entry in the tuple is the return value,
+        and has the following meaning:
+        2 - no data received from server/nothig
+        0 - posting was fine
+        -1 - something went wrong
         '''
 
         postMsg = "APOST " + user + "::" + message
-        self.sock.sendto(postMsg.encode('utf8'), (self))
-        readlist, writelist, errlist = select.select(self.sock, [], [], 0.1)
-        if len(readlist) != 0;
+        self.sock.sendto(postMsg.encode('utf8'), (self.host, self.port))
+        readlist, writelist, errlist = select([self.sock], [], [], 0.1)
+        if len(readlist) != 0:
             (msgs, serveraddr) = self.sock.recvfrom(1400)
-            if msgs[:3].decode() == "AOK" and len(Msgs) == 4:
-                return (0,0)
+            if msgs.decode() == "AOK":
+                return (0, 0)
+            elif msgs[:6].decode() == "AERROR":
+                return (-1, msgs[7:].decode())   # after "AERROR "
             else:
-                return (-1, msgs[7:])   # after "AERROR "
+                return (2, 0)
+        else:   # no data? probably impossible but just to make sure
+            return (2, 0)
 
 
 class MessageBoardController(object):
@@ -87,7 +107,7 @@ class MessageBoardController(object):
         self.waittime = 300	# refresh every 0.3s
 
     def run(self):
-        self.view.after(waittime, self.retrieve_messages)
+        self.view.after(self.waittime, self.retrieve_messages)
         self.view.mainloop()
         
     def post_message_callback(self, m):
@@ -95,8 +115,11 @@ class MessageBoardController(object):
         
         if rv == -1:
         	# just change the status
-        	self.view.setStatus("Error when posting \"{}\", {}", m, error_m)
-        
+        	self.view.setStatus("Error when posting \"{}\", {}".format(m, error_m))
+        elif rv == 0:   # everything went fine
+            self.view.setStatus("Post success")
+        else:   # no data received? do nothing
+            self.view.setStatus("ho-hum, status")
 
     def retrieve_messages(self):
         '''
@@ -109,13 +132,15 @@ class MessageBoardController(object):
         
         # can increase refresh speed by decreasing that number
         # apparently in milliseconds
-        self.view.after(waittime, self.retrieve_messages)
+        self.view.after(self.waittime, self.retrieve_messages)
         (rv, msgs) = self.net.getMessages()
         
         if rv == -1:
             # just change the status
-        	self.view.setStatus("Error when retrieving messages, {}", error_m)
-        else:   # rv == 0
+            error_msg = "Error when retrieving messages, {}".format(msgs)
+            self.view.setStatus(error_msg)
+        elif rv == 1:   # there are msgs on server
+        
             mlist = []      # list of messages
             part_of_msg = 0 # either 0, 1, or 2 to indicate which part
             curr_msg = ""   # current message to assemble
@@ -128,7 +153,10 @@ class MessageBoardController(object):
                 part_of_msg = (part_of_msg + 1) % 3 # every message has 3 parts
             
             self.view.setListItems(mlist)
-                    
+        elif rv == 0:   # no messages on server
+            self.view.setStatus([msgs])
+        elif rv == 2:   # no data? pass
+            self.view.setStatus("ho-hum, status")
                 
 
 class MessageBoardView(tkinter.Frame):
