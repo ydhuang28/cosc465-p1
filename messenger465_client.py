@@ -39,11 +39,11 @@ class MessageBoardNetwork(object):
         '''
         getMsg = "AGET"
         self.sock.sendto(getMsg.encode('utf8'), (self.server, self.port))
-        running = 1
-        while running:
-            readlist, writelist, errlist = select.select(self.sock, [], [], 0.1)
+
+        readlist, writelist, errlist = select.select(self.sock, [], [], 0.1)
+        if len(readlist) != 0;
             (Msgs, serveraddr) = self.sock.recvfrom(1400)
-            
+        
             if Msgs[0:2].decode() == "OK" and len(Msgs) > 4:
                 Msgs = Msgs[4:]
                 splitMsgs = 
@@ -54,20 +54,20 @@ class MessageBoardNetwork(object):
             else:
                 return ["Error", Msgs[7:]]
 
-        return 
 
     def postMessage(self, user, message):
         '''
         You should make calls to post messages to the message 
         board server here.
         '''
+
         postMsg = "APOST " + user + "::" + message
         self.sock.sendto(postMsg.encode('utf8'), (self))
         (Msgs, serveraddr) = self.sock.recvfrom()
         if Msgs[0:2].decode() == "OK" and len(Msgs) == 2:
-            pass
+            return (0,0)
         else:
-            return [M]
+            return (-1, Msgs[7:])
 
 
 class MessageBoardController(object):
