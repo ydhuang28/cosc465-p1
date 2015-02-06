@@ -44,11 +44,11 @@ class MessageBoardNetwork(object):
         if len(readlist) != 0;
             (Msgs, serveraddr) = self.sock.recvfrom(1400)
         
-            if Msgs[0:2].decode() == "OK" and len(Msgs) > 4:
-                Msgs = Msgs[4:]
+            if Msgs[0:3].decode() == "AOK" and len(Msgs) > 4:
+                Msgs = Msgs[5:]
                 splitMsgs = 
 
-            elif len(Msgs) == 3:
+            elif len(Msgs) == 4:
                 return ["There is no message at the server at this moment."]
 
             else:
