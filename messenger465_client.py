@@ -92,19 +92,9 @@ class MessageBoardController(object):
     def post_message_callback(self, m):
         rv = self.net.postMessage(myname, m)
         
-        if rv[:5] == "AERROR":
+        if rv[0] == -1:
         	# just change the status
         	self.view.setStatus("Error when posting " + m)
-        elif rv[:2] == "AOK":
-        	# posting was a-ok
-        	# view cannot add one line at a time
-        	# how to get previous messages?
-        	# create instance variable in controller class?
-        	# --> let retrieve_messages handle it since that
-        	#     is periodically called
-        	# so just ignore?
-        	
-        
         
 
     def retrieve_messages(self):
