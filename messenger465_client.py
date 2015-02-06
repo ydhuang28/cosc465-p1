@@ -45,14 +45,15 @@ class MessageBoardNetwork(object):
             (Msgs, serveraddr) = self.sock.recvfrom(1400)
         
             if Msgs[0:3].decode() == "AOK" and len(Msgs) > 4:
-                Msgs = Msgs[5:]
-                splitMsgs = 
+                Msgs = Msgs[4:]
+                return Msgs
+                #splitMsgs = 
 
             elif len(Msgs) == 4:
                 return ["There is no message at the server at this moment."]
 
             else:
-                return ["Error", Msgs[7:]]
+                return ["AError", Msgs[8:]]
 
 
     def postMessage(self, user, message):
@@ -63,11 +64,13 @@ class MessageBoardNetwork(object):
 
         postMsg = "APOST " + user + "::" + message
         self.sock.sendto(postMsg.encode('utf8'), (self))
-        (Msgs, serveraddr) = self.sock.recvfrom()
-        if Msgs[0:2].decode() == "OK" and len(Msgs) == 2:
-            return (0,0)
-        else:
-            return (-1, Msgs[7:])
+        readlist, writelist, errlist = select.select(self.sock, [], [], 0.1)
+        if len(readlist) != 0;
+            (Msgs, serveraddr) = self.sock.recvfrom(1400)
+            if Msgs[0:2].decode() == "AOK" and len(Msgs) == 4:
+                return (0,0)
+            else:
+                return (-1, Msgs[8:])
 
 
 class MessageBoardController(object):
