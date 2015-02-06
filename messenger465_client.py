@@ -42,18 +42,17 @@ class MessageBoardNetwork(object):
 
         readlist, writelist, errlist = select.select(self.sock, [], [], 0.1)
         if len(readlist) != 0;
-            (Msgs, serveraddr) = self.sock.recvfrom(1400)
+            (msgs, serveraddr) = self.sock.recvfrom(1400)
         
-            if Msgs[0:3].decode() == "AOK" and len(Msgs) > 4:
-                Msgs = Msgs[4:]
-                return Msgs
+            if msgs[0:3].decode() == "AOK" and len(Msgs) > 4:
+                return (0, msgs[4:].split("::"))
                 #splitMsgs = 
 
-            elif len(Msgs) == 4:
-                return ["There is no message at the server at this moment."]
+            elif len(msgs) == 4:    # just "AOK "
+                return (0, ["There are no messages on the server at this moment."])
 
-            else:
-                return ["AError", Msgs[8:]]
+            else:   # something went horribly wrong!
+                return (-1, msgs[7:])
 
 
     def postMessage(self, user, message):
@@ -66,11 +65,11 @@ class MessageBoardNetwork(object):
         self.sock.sendto(postMsg.encode('utf8'), (self))
         readlist, writelist, errlist = select.select(self.sock, [], [], 0.1)
         if len(readlist) != 0;
-            (Msgs, serveraddr) = self.sock.recvfrom(1400)
-            if Msgs[0:2].decode() == "AOK" and len(Msgs) == 4:
+            (msgs, serveraddr) = self.sock.recvfrom(1400)
+            if msgs[:3].decode() == "AOK" and len(Msgs) == 4:
                 return (0,0)
             else:
-                return (-1, Msgs[8:])
+                return (-1, msgs[7:])   # after "AERROR "
 
 
 class MessageBoardController(object):
@@ -86,18 +85,17 @@ class MessageBoardController(object):
         self.view.setMessageCallback(self.post_message_callback)
         self.net = MessageBoardNetwork(host, port)
         self.waittime = 300	# refresh every 0.3s
-        self.prev_msgs = []	# create empty list to store messages
 
     def run(self):
         self.view.after(waittime, self.retrieve_messages)
         self.view.mainloop()
         
     def post_message_callback(self, m):
-        rv = self.net.postMessage(myname, m)
+        (rv, error_m) = self.net.postMessage(myname, m)
         
-        if rv[0] == -1:
+        if rv == -1:
         	# just change the status
-        	self.view.setStatus("Error when posting " + m)
+        	self.view.setStatus("Error when posting \"{}\", {}", m, error_m)
         
 
     def retrieve_messages(self):
@@ -107,22 +105,31 @@ class MessageBoardController(object):
         method getMessages() to do the "hard" work of retrieving
         the messages from the server, then it should call 
         methods in MessageBoardView to display them in the GUI.
-
-        You'll need to parse the response data from the server
-        and figure out what should be displayed.
-
-        Two relevant methods are (1) self.view.setListItems, which
-        takes a list of strings as input, and displays that 
-        list of strings in the GUI, and (2) self.view.setStatus,
-        which can be used to display any useful status information
-        at the bottom of the GUI.
         '''
         
         # can increase refresh speed by decreasing that number
         # apparently in milliseconds
         self.view.after(waittime, self.retrieve_messages)
-        self.prev_msgs = self.net.getMessages()
-
+        (rv, msgs) = self.net.getMessages()
+        
+        if rv == -1:
+            # just change the status
+        	self.view.setStatus("Error when retrieving messages, {}", error_m)
+        else:   # rv == 0
+            mlist = []      # list of messages
+            part_of_msg = 0 # either 0, 1, or 2 to indicate which part
+            curr_msg = ""   # current message to assemble
+            
+            for msg_part in msgs:
+                curr_msg += msg_part + " "
+                if part_of_msg == 2:    # after added everything for 1 message
+                    mlist += [curr_msg] # append current message to list
+                    curr_msg = ""       # clear current message
+                part_of_msg = (part_of_msg + 1) % 3 # every message has 3 parts
+            
+            self.view.setListItems(mlist)
+                    
+                
 
 class MessageBoardView(tkinter.Frame):
     '''
