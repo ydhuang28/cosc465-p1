@@ -24,12 +24,13 @@ class MessageBoardNetwork(object):
     '''
     def __init__(self, host, port):
         '''
-        Constructor.  You should create a new socket
-        here and do any other initialization.
+        Constructor.  Creates a new socket
+        and does other initialization.
         '''
         self.port = port
         self.host = host
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, 0)
+        self.sequence = '0'
 
     def getMessages(self):
         '''
@@ -90,6 +91,12 @@ class MessageBoardNetwork(object):
                 return (2, 0)
         else:   # no data? probably impossible but just to make sure
             return (2, 0)
+            
+    def gen_chksum(msg):
+         
+    def verify_chksum(chksum1, chksum2):
+        return (chksum1 & chksum2) == chksum1
+        
 
 
 class MessageBoardController(object):
@@ -119,7 +126,7 @@ class MessageBoardController(object):
         elif rv == 0:   # everything went fine
             self.view.setStatus("Post success")
         else:   # no data received? do nothing
-            self.view.setStatus("ho-hum, status")
+            pass
 
     def retrieve_messages(self):
         '''
@@ -156,7 +163,7 @@ class MessageBoardController(object):
         elif rv == 0:   # no messages on server
             self.view.setStatus([msgs])
         elif rv == 2:   # no data? pass
-            self.view.setStatus("ho-hum, status")
+            pass
                 
 
 class MessageBoardView(tkinter.Frame):
