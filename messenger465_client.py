@@ -25,12 +25,17 @@ class MessageBoardNetwork(object):
     def __init__(self, host, port):
         '''
         Constructor.  Creates a new socket
-        and does other initialization.
+        and does other initialization:
+        sequence = 0
+        timeout = ? s
+        max transmission = ?
         '''
         self.port = port
         self.host = host
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, 0)
         self.sequence = '0'
+        self.timeout = 0.3
+        self.max_tms = 5
 
     def getMessages(self):
         '''
