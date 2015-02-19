@@ -43,7 +43,7 @@ class MessageBoardNetwork(object):
         0 - no messages
         -1 - something went wrong
         '''
-        getMsg = "AGET"
+        getMsg = "GET"
         self.sock.sendto(getMsg.encode('utf8'), (self.host, self.port))
 
         readlist, writelist, errlist = select([self.sock], [], [], 0.1)
@@ -93,6 +93,8 @@ class MessageBoardNetwork(object):
             return (2, 0)
             
     def gen_chksum(msg):
+        # -- TO DO --
+        # XOR all bytes in the app data to get checksum
          
     def verify_chksum(chksum1, chksum2):
         return (chksum1 & chksum2) == chksum1
